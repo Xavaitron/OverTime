@@ -21,6 +21,7 @@ contract Overtime {
     }
 
     address public admin;
+    address[] public workerAddresses;
     mapping(address => Worker) public workers;
     Task[] public tasks;
 
@@ -48,6 +49,8 @@ contract Overtime {
             wallet: msg.sender,
             registered: true
         });
+
+        workerAddresses.push(msg.sender); // Add worker's address to the array
     }
 
     function addTask(uint256 _requiredTime, uint256 _expertiseRequired, uint256 _hourlyWage, uint256 _deadline, bool _divisible) external onlyAdmin {
@@ -65,7 +68,8 @@ contract Overtime {
     function allocateTasks() external onlyAdmin {
         for(uint256 i = 0; i < tasks.length; i++) {
             if(!tasks[i].allocated) {
-                for(address workerAddress = address(0); workerAddress <= address(uint160(-1)); workerAddress++) {
+                for(uint256 j = 0; j < workerAddresses.length; j++) {
+                    address workerAddress = workerAddresses[j];
                     Worker memory worker = workers[workerAddress];
                     if(worker.registered && worker.expertise >= tasks[i].expertiseRequired && worker.minWage <= tasks[i].hourlyWage && worker.hoursAvailable >= tasks[i].requiredTime) {
                         tasks[i].workerAssigned = worker.wallet;
