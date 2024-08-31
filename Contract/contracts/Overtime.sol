@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
+pragma solidity ^0.8.26;
 contract Overtime {
 
     struct Worker {
@@ -18,12 +17,13 @@ contract Overtime {
         uint256 deadline;
         bool divisible;
         bool allocated;
-        address workerAssigned;
     }
 
-    address public admin;
-    address[] public workerAddresses;
+    address admin;
+    uint[] PricePoints;
+    mapping(uint=>mapping(uint=>address[]))priceWorkerMap;
     mapping(address => Worker) public workers;
+    mapping (uint=>mapping (address=>uint)) assignedWorker;
     Task[] public tasks;
 
     constructor() {
@@ -34,12 +34,6 @@ contract Overtime {
         require(msg.sender == admin, "Only admin can perform this action.");
         _;
     }
-
-    modifier onlyRegistered() {
-        require(workers[msg.sender].registered, "Worker not registered.");
-        _;
-    }
-
     function registerWorker(uint256 _hours, uint256 _expertise, uint256 _minWage) external {
         require(!workers[msg.sender].registered, "Worker already registered.");
 
@@ -50,55 +44,101 @@ contract Overtime {
             wallet: msg.sender,
             registered: true
         });
-
-        workerAddresses.push(msg.sender); // Add worker's address to the array
-    }
-
-    function addTask(uint256 _requiredTime, uint256 _expertiseRequired, uint256 _hourlyWage, uint256 _deadline, bool _divisible) external onlyAdmin {
-        tasks.push(Task({
-            requiredTime: _requiredTime,
-            expertiseRequired: _expertiseRequired,
-            hourlyWage: _hourlyWage,
-            deadline: _deadline,
-            divisible: _divisible,
-            allocated: false,
-            workerAssigned: address(0)
-        }));
-    }
-
-    function allocateTasks() external onlyAdmin {
-        for(uint256 i = 0; i < tasks.length; i++) {
-            if(!tasks[i].allocated) {
-                for(uint256 j = 0; j < workerAddresses.length; j++) {
-                    address workerAddress = workerAddresses[j];
-                    Worker memory worker = workers[workerAddress];
-                    if(worker.registered && worker.expertise >= tasks[i].expertiseRequired && worker.minWage <= tasks[i].hourlyWage && worker.hoursAvailable >= tasks[i].requiredTime) {
-                        tasks[i].workerAssigned = worker.wallet;
-                        tasks[i].allocated = true;
-                        workers[worker.wallet].hoursAvailable -= tasks[i].requiredTime;
-                        break;
-                    }
-                }
+        uint x = PricePoints.length;
+        for(uint i = 0; i<PricePoints.length;i++){
+            if(PricePoints[i] >= _minWage) {x = i;break;}
+        }
+        if(PricePoints[x]!=_minWage){
+            PricePoints.push(_minWage);
+            for(uint i = PricePoints.length-1;i>x;i--){
+                PricePoints[i] += PricePoints[i-1];
+                PricePoints[i-1] = PricePoints[i]-PricePoints[i-1];
+                PricePoints[i]-=PricePoints[i-1];
             }
         }
+        priceWorkerMap[_minWage][_expertise].push(msg.sender);
+    }
+    uint maxExpertiseLevel=10;
+    function lower_bound(uint target) internal view returns (uint){
+        uint l = 0;
+        uint r=PricePoints.length-1;
+        while(r-l>0){
+            uint m = (l+r)/2;
+            if(PricePoints[m]==target)return m;
+            else if(PricePoints[m]<target)l = m+1 ;
+            else r=m;
+        }
+        return l;
+    }
+    address[] assigned;
+    function addTask(uint256 _requiredTime, uint256 _expertiseRequired, uint256 _hourlyWage, uint256 _deadline, bool _divisible) external onlyAdmin returns (bool){
+        if(_hourlyWage<PricePoints[0])return false;
+        uint x = lower_bound(_hourlyWage);
+        delete assigned;
+        if(_divisible){
+            uint done = 0;
+            for(uint exp = _expertiseRequired;exp<=maxExpertiseLevel;exp++){
+                for(uint i = 0;i<priceWorkerMap[PricePoints[x]][exp].length;i++){
+                        address a= priceWorkerMap[PricePoints[x]][exp][i];
+                        assigned.push(a);
+                        done+=workers[a].hoursAvailable;
+                        if(done>=_requiredTime){
+                            uint taskId = tasks.length;
+                            tasks.push(Task({
+                                requiredTime: _requiredTime,
+                                expertiseRequired: _expertiseRequired,
+                                hourlyWage: _hourlyWage,
+                                deadline: _deadline,
+                                divisible: _divisible,
+                                allocated: false
+                             }));
+                             for(uint t = 0;t<assigned.length-1;t++){
+                                done-=workers[assigned[t]].hoursAvailable;
+                                assignedWorker[taskId][assigned[t]]=workers[assigned[t]].hoursAvailable;
+                                workers[assigned[t]].hoursAvailable=0;
+                             }
+                            workers[assigned[assigned.length-1]].hoursAvailable-=done;
+                            assignedWorker[taskId][assigned[assigned.length-1]] = done;
+                            
+                            return true;
+                        }
+                    }
+                x --;
+            }
+        }else{
+            while(x!=0){
+                for(uint exp = _expertiseRequired;exp<=maxExpertiseLevel;exp++){
+                    for(uint i = 0;i<priceWorkerMap[PricePoints[x]][exp].length;i++){
+                        address a= priceWorkerMap[PricePoints[x]][exp][i];
+                        if(workers[a].hoursAvailable>=_requiredTime){
+                            uint taskId= tasks.length;
+                            assignedWorker[taskId][a] = _requiredTime;
+                            tasks.push(Task({
+                                requiredTime: _requiredTime,
+                                expertiseRequired: _expertiseRequired,
+                                hourlyWage: _hourlyWage,
+                                deadline: _deadline,
+                                divisible: _divisible,
+                                allocated: false
+                            }));
+                            workers[a].hoursAvailable-=_requiredTime;
+                            return true;
+                        }
+                    }
+                }
+                x --;
+            }
+        }
+        return false; // Return true (task added successfully)
+    }
+    function completeTask(uint256 taskId,address _worker) external payable onlyAdmin {
+        require(assignedWorker[taskId][_worker]!=0);
+        if(block.timestamp > tasks[taskId].deadline){
+            payable(msg.sender).transfer(assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage);
+        }else{
+            payable(_worker).transfer(assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage);
+        }
+        delete assignedWorker[taskId][_worker];
     }
 
-    function completeTask(uint256 taskId) external onlyRegistered {
-        Task storage task = tasks[taskId];
-        require(task.workerAssigned == msg.sender, "Task not assigned to this worker.");
-        require(block.timestamp >= task.deadline, "Task deadline not yet reached.");
-        
-        payable(msg.sender).transfer(task.requiredTime * task.hourlyWage);
-        task.allocated = false;  
-    }
-
-    function getWorker(address workerAddress) external view returns (Worker memory) {
-        return workers[workerAddress];
-    }
-
-    function getTask(uint256 taskId) external view returns (Task memory) {
-        return tasks[taskId];
-    }
-
-    receive() external payable {}
 }
