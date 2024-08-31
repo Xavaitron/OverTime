@@ -88,7 +88,7 @@ contract Overtime {
         require(block.timestamp >= task.deadline, "Task deadline not yet reached.");
         
         payable(msg.sender).transfer(task.requiredTime * task.hourlyWage);
-        task.allocated = false;  // Mark task as completed
+        task.allocated = false;  
     }
 
     function getWorker(address workerAddress) external view returns (Worker memory) {
