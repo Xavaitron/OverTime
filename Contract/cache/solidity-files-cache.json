@@ -2,12 +2,13 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\ironp\\OneDrive\\Documents\\GitHub\\OverTime\\Contract\\contracts\\Overtime.sol": {
-      "lastModificationDate": 1725139668527,
-      "contentHash": "e64e25632fbfcd59e0434ad5cac6b0cb",
+      "lastModificationDate": 1725317669616,
+      "contentHash": "9a023adfb3b0c97890a7d5f82a6c346a",
       "sourceName": "contracts/Overtime.sol",
       "solcConfig": {
-        "version": "0.8.0",
+        "version": "0.8.26",
         "settings": {
+          "evmVersion": "paris",
           "optimizer": {
             "enabled": false,
             "runs": 200
@@ -30,7 +31,7 @@
       },
       "imports": [],
       "versionPragmas": [
-        "^0.8.0"
+        "^0.8.26"
       ],
       "artifacts": [
         "Overtime"
