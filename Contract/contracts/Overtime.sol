@@ -25,25 +25,13 @@ contract Overtime {
     mapping(address => Worker) public workers;
     mapping (uint=>mapping (address=>uint)) assignedWorker;
     Task[] public tasks;
-
+    uint totalPayment;
+    uint totalHours;
+    
     constructor() {
-        admin = msg.sender;
-        // workers[0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2] = Worker({
-        //     hoursAvailable: 4,
-        //     expertise: 1,
-        //     minWage: 2,
-        //     wallet: 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2,
-        //     registered: true
-        // });workers[0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db] = Worker({
-        //     hoursAvailable: 1,
-        //     expertise: 2,
-        //     minWage: 3,
-        //     wallet: 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db,
-        //     registered: true
-        // });
-        // PricePoints.push(2);
-        // PricePoints.push(3);
-        
+        admin = msg.sender;     
+        totalPayment = 0;   
+        totalHours =0;
     }
 
     modifier onlyAdmin() {
@@ -150,15 +138,17 @@ contract Overtime {
         }
         return false;
     }
-    function taskLength() public view returns(uint){return tasks.length;}
+    function getTotalPayments() public view returns (uint){return totalPayment;}
+    function getTotalHours() public view returns (uint){return totalHours;}
+    function getTotalTasks() public view returns(uint){return tasks.length;}
     function completeTask(uint256 taskId,address _worker) external payable onlyAdmin {
         require(assignedWorker[taskId][_worker]!=0 ,"This task is not allocated yet.");
-        require(msg.value>=assignedWorker[taskId][_worker]*tasks[taskId].hourlyWage/1000000000000000000,"insufficient funds");
-        if(block.timestamp <= tasks[taskId].deadline){
-            payable(_worker).transfer(assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage/1000000000000000000);
-        }
+        require(msg.value>=assignedWorker[taskId][_worker]*tasks[taskId].hourlyWage/1000000000,"insufficient funds");
+        require(block.timestamp <= tasks[taskId].deadline,"task has expired");
+        payable(_worker).transfer(assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage/1000000000);
+        totalPayment+=assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage;
+        totalHours +=assignedWorker[taskId][_worker];
         payable (msg.sender).transfer(msg.value);
         delete assignedWorker[taskId][_worker];
     }
-
 }
