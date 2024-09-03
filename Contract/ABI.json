@@ -1,0 +1,277 @@
+[
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "timeRequired",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "expertiseRequired",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "hourlyWage",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "deadline",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "divisible",
+				"type": "bool"
+			}
+		],
+		"name": "addTask",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "taskId",
+				"type": "uint256"
+			}
+		],
+		"name": "allocate",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "taskId",
+				"type": "uint256"
+			}
+		],
+		"name": "checkStatusTask",
+		"outputs": [
+			{
+				"internalType": "bool[]",
+				"name": "",
+				"type": "bool[]"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_worker",
+				"type": "address"
+			}
+		],
+		"name": "checkWallet",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "taskId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "_worker",
+				"type": "address"
+			}
+		],
+		"name": "completeTask",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getAllocation",
+		"outputs": [
+			{
+				"internalType": "address[][]",
+				"name": "",
+				"type": "address[][]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getTotalHours",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getTotalPayments",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getTotalTasks",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_hours",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_expertise",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_minWage",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "_wallet",
+				"type": "address"
+			}
+		],
+		"name": "registerWorker",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "tasks",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "requiredTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "expertiseRequired",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "hourlyWage",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "deadline",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "divisible",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "allocated",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "workersLeft",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "workers",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "hoursAvailable",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "expertise",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "minWage",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "wallet",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "registered",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
