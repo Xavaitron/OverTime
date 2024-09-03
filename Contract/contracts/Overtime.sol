@@ -80,6 +80,7 @@ contract Overtime {
     }
     address[] assigned;
     function addTask(uint256 timeRequired, uint256 expertiseRequired,uint[] calldata dependencies, uint256 hourlyWage, uint256 deadline, bool divisible) public onlyAdmin {
+        require(1<=expertiseRequired && expertiseRequired<4 && deadline>block.timestamp,"invalid input");
         tasks.push(Task(timeRequired, expertiseRequired,dependencies, hourlyWage, deadline, divisible,false,0));
         
         address[] memory t;
@@ -88,15 +89,16 @@ contract Overtime {
     }
     bool [] public doneTask;
     function checkStatusTask() public{
-        delete doneTask;
         for(uint i =0;i<tasks.length;i++){
              if(!tasks[i].allocated)allocate(i);
-            doneTask.push(tasks[i].allocated && tasks[i].workersLeft==0);
+            if(i<doneTask.length)doneTask[i] = tasks[i].allocated && tasks[i].workersLeft==0;
+            else doneTask.push(tasks[i].allocated && tasks[i].workersLeft==0);
         }
     }
     function getStatusTask()public view returns (bool[]memory){
         return doneTask;
     }
+    function getTaskList()public view returns (Task[]memory){return tasks;}
     function allocate(uint taskId) internal{
         if(PricePoints.length==0)return;
         if(tasks[taskId].hourlyWage<PricePoints[0])return;
