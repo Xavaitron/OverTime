@@ -17,6 +17,11 @@
 				"type": "uint256"
 			},
 			{
+				"internalType": "uint256[]",
+				"name": "dependencies",
+				"type": "uint256[]"
+			},
+			{
 				"internalType": "uint256",
 				"name": "hourlyWage",
 				"type": "uint256"

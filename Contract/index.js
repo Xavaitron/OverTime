@@ -58,7 +58,7 @@ app.post("/addWorker", async (req, res) => {
 
 app.get("/checkStatus", async (req, res) => {
   try {
-    const tasks = await contractInstance.getTasks();
+    const tasks = await contractInstance.checkStatusTask();
     t;
     const formattedTasks = tasks.map((task) => ({
       task_id: task.id,
