@@ -116,6 +116,7 @@ contract Overtime {
                         if(done>=tasks[taskId].requiredTime){
                             tasks[taskId].allocated = true;
                             tasks[taskId].workersLeft = assigned.length;
+                            done= tasks[taskId].requiredTime;
                             for(uint t = 0;t<assigned.length-1;t++){
                                 done-=workers[assigned[t]].hoursAvailable;
                                 assignedWorker[taskId][assigned[t]]=workers[assigned[t]].hoursAvailable;
@@ -129,6 +130,7 @@ contract Overtime {
                         }
                     }
                 }
+                if(x==0)return;
                 x-=1;
             }
         }else{
@@ -149,6 +151,7 @@ contract Overtime {
                         }
                     }
                 }
+                if(x==0)return;
                 x -=1;
             }
         }
@@ -170,6 +173,7 @@ contract Overtime {
         payable (msg.sender).transfer(msg.value);
          assignedWorker[taskId][_worker]=NULL_VAL;
     }
+    function g(uint a,address b)public view returns(uint){return assignedWorker[a][b];}
     function checkWallet(address _worker) public view returns(bool){
         return _worker.balance>0;
     }//error is same as invalid wallet
