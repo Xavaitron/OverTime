@@ -13,11 +13,14 @@ contract Overtime {
     struct Task {
         uint256 requiredTime;
         uint256 expertiseRequired;
+        uint [] dependencies;
         uint256 hourlyWage;
         uint256 deadline;
         bool divisible;
         bool allocated;
         uint workersLeft;
+       
+
     }
 
     address admin;
@@ -42,7 +45,6 @@ contract Overtime {
     }
     function registerWorker(uint256 _hours, uint256 _expertise, uint256 _minWage,address _wallet) external {
         require(!workers[_wallet].registered, "Worker already registered.");
-        
         workers[_wallet] = Worker({
             hoursAvailable: _hours,
             expertise: _expertise,
@@ -77,11 +79,12 @@ contract Overtime {
         return l;
     }
     address[] assigned;
-    function addTask(uint256 timeRequired, uint256 expertiseRequired, uint256 hourlyWage, uint256 deadline, bool divisible) public onlyAdmin {
-        tasks.push(Task(timeRequired, expertiseRequired, hourlyWage, deadline, divisible,false,0));
-        allocate(tasks.length-1);
+    function addTask(uint256 timeRequired, uint256 expertiseRequired,uint[] calldata dependencies, uint256 hourlyWage, uint256 deadline, bool divisible) public onlyAdmin {
+        tasks.push(Task(timeRequired, expertiseRequired,dependencies, hourlyWage, deadline, divisible,false,0));
+        
         address[] memory t;
         assignedList.push(t);
+        allocate(tasks.length-1);
     }
     bool [] doneTask;
     function checkStatusTask(uint taskId) public returns (bool[]memory){
@@ -103,6 +106,11 @@ contract Overtime {
                 for(uint exp = tasks[taskId].expertiseRequired;exp<=maxExpertiseLevel;exp++){
                     for(uint i = 0;i<priceWorkerMap[PricePoints[x]][exp].length;i++){
                         address a= priceWorkerMap[PricePoints[x]][exp][i];
+                        bool f= false;
+                        for(uint it = 0; it<tasks[taskId].dependencies.length;it++){
+                            if(assignedWorker[tasks[taskId].dependencies[it]][a]!=NULL_VAL){f=true;break;}
+                        }
+                        if(f)continue;
                         assigned.push(a);
                         done+=workers[a].hoursAvailable;
                         if(done>=tasks[taskId].requiredTime){
@@ -144,8 +152,10 @@ contract Overtime {
     function getTotalPayments() public view returns (uint){return totalPayment;}
     function getTotalHours() public view returns (uint){return totalHours;}
     function getTotalTasks() public view returns(uint){return tasks.length;}
+    uint NULL_VAL=10000000000000000000000000;
     function completeTask(uint256 taskId,address _worker) external payable onlyAdmin {
         require(assignedWorker[taskId][_worker]!=0 ,"This task is not allocated yet.");
+        require(assignedWorker[taskId][_worker]<NULL_VAL ,"This task is already completed by worker.");
         require(msg.value>=assignedWorker[taskId][_worker]*tasks[taskId].hourlyWage/1000000000,"insufficient funds");
         require(block.timestamp <= tasks[taskId].deadline,"task has expired");
         payable(_worker).transfer(assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage/1000000000);
@@ -153,7 +163,7 @@ contract Overtime {
         totalHours +=assignedWorker[taskId][_worker];
         tasks[taskId].workersLeft-=1;
         payable (msg.sender).transfer(msg.value);
-        delete assignedWorker[taskId][_worker];
+         assignedWorker[taskId][_worker]=NULL_VAL;
     }
     function checkWallet(address _worker) public view returns(bool){
         return _worker.balance>0;
