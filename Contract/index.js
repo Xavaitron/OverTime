@@ -40,7 +40,7 @@ app.post("/addWorker", async (req, res) => {
   const { hours, expertise, min_wage, wallet } = req.body;
 
   try {
-    const tx = await contractInstance.addWorker(
+    const tx = await contractInstance.registerWorker(
       hours,
       expertise,
       min_wage,
