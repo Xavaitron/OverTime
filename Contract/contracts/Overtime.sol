@@ -86,16 +86,16 @@ contract Overtime {
         assignedList.push(t);
         allocate(tasks.length-1);
     }
-    bool [] doneTask;
-    function checkStatusTask(uint taskId) public returns (bool[]memory){
-        doneTask = new bool[](tasks.length);
+    bool [] public doneTask;
+    function checkStatusTask() public returns (bool[]memory){
+        delete doneTask;
         for(uint i =0;i<tasks.length;i++){
              if(tasks[i].allocated)allocate(i);
-            doneTask[i]=tasks[taskId].allocated && tasks[taskId].workersLeft==0;
+            doneTask.push(tasks[i].allocated && tasks[i].workersLeft==0);
         }
         return doneTask;
     }
-    function allocate(uint taskId) public {
+    function allocate(uint taskId) internal{
         if(PricePoints.length==0)return;
         if(tasks[taskId].hourlyWage<PricePoints[0])return;
         uint x = lower_bound(tasks[taskId].hourlyWage);
@@ -136,6 +136,11 @@ contract Overtime {
                 for(uint exp = tasks[taskId].expertiseRequired;exp<=maxExpertiseLevel;exp++){
                     for(uint i = 0;i<priceWorkerMap[PricePoints[x]][exp].length;i++){
                         address a= priceWorkerMap[PricePoints[x]][exp][i];
+                        bool f= false;
+                        for(uint it = 0; it<tasks[taskId].dependencies.length;it++){
+                            if(assignedWorker[tasks[taskId].dependencies[it]][a]!=NULL_VAL){f=true;break;}
+                        }
+                        if(f)continue;
                         if(workers[a].hoursAvailable>=tasks[taskId].requiredTime){
                             assignedWorker[taskId][a] = tasks[taskId].requiredTime;
                             workers[a].hoursAvailable-=tasks[taskId].requiredTime;
