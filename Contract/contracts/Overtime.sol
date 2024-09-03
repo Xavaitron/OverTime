@@ -87,12 +87,14 @@ contract Overtime {
         allocate(tasks.length-1);
     }
     bool [] public doneTask;
-    function checkStatusTask() public returns (bool[]memory){
+    function checkStatusTask() public{
         delete doneTask;
         for(uint i =0;i<tasks.length;i++){
              if(!tasks[i].allocated)allocate(i);
             doneTask.push(tasks[i].allocated && tasks[i].workersLeft==0);
         }
+    }
+    function getStatusTask()public view returns (bool[]memory){
         return doneTask;
     }
     function allocate(uint taskId) internal{
