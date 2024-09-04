@@ -1,8 +1,10 @@
 const ethers = require("ethers");
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors")
 const app = express();
 app.use(express.json());
+app.use(cors())
 
 const API = process.env.INFURA_API;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
@@ -100,7 +102,7 @@ app.post("/checkWallet", async (req, res) => {
     res.status(200).json({ status : status.toString() });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to check wallet balance" });
+    res.status(200).json({ error: "Failed to check wallet balance" });
   }
 });
 
@@ -126,6 +128,27 @@ app.get("/getAdmin", async (req, res) => {
   }
 });
 
+app.get("/getTotalPayment", async (req, res) => {
+  try {
+    const Payment = await contractInstance.getTotalPayments();
+    
+    res.status(200).json({ payment: Payment.toString() });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch total payment" });
+  }
+});
+
+app.get("/getTotalHours", async (req, res) => {
+  try {
+    const Hours = await contractInstance.getTotalHours();
+    
+    res.status(200).json({ hours: Hours.toString() });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch total hours" });
+  }
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
