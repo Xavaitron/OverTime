@@ -110,7 +110,7 @@ contract Overtime {
                         for(uint it = 0; it<tasks[taskId].dependencies.length;it++){
                             if(assignedWorker[tasks[taskId].dependencies[it]][a]!=NULL_VAL){f=true;break;}
                         }
-                        if(f)continue;
+                        if(f || workers[a].hoursAvailable==0)continue;
                         if(workers[a].hoursAvailable<tasks[taskId].requiredTime){
                             tasks[taskId].requiredTime-=workers[a].hoursAvailable;
                             assignedWorker[taskId][a]=workers[a].hoursAvailable;
