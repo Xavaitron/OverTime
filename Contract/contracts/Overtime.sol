@@ -20,7 +20,7 @@ contract Overtime {
         uint workersLeft;
     }
 
-    address admin;
+    address public admin;
     uint[] PricePoints;
     mapping(uint=>mapping(uint=>address[]))priceWorkerMap;
     mapping(address => Worker) public workers;
