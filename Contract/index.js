@@ -58,12 +58,30 @@ app.post("/addWorker", async (req, res) => {
 
 app.get("/checkStatus", async (req, res) => {
   try {
-    const tasks = await contractInstance.checkStatusTask();
-    t;
-    const formattedTasks = tasks.map((task) => ({
-      task_id: task.id,
-      worker_id: task.workerId ? task.workerId : null,
-      status: task.completed,
+
+    await contractInstance.checkStatusTask();
+    const tasksStatus = await contractInstance.getStatusTask();
+    const tasksAllocation = await contractInstance.getAllocation();
+
+    // console.log('tasksStatus:', tasksStatus);
+    // console.log('tasksAllocation:', tasksAllocation);
+
+    // // Ensure tasksStatus is an array
+    // if (!Array.isArray(tasksStatus)) {
+    //   throw new Error("tasksStatus is not an array");
+    // }
+
+    // // Ensure tasksAllocation is an array of arrays
+    // if (!Array.isArray(tasksAllocation) || !tasksAllocation.every(Array.isArray)) {
+    //   throw new Error("tasksAllocation is not a valid array of arrays");
+    // }
+
+    const formattedTasks = tasksStatus.map((status, taskId) => ({
+      task_id: taskId.toString(),
+      worker_id: tasksAllocation[taskId] && tasksAllocation[taskId].length > 0
+        ? tasksAllocation[taskId].map(id => id.toString())
+        : null,
+      status: status,
     }));
 
     res.status(200).json({ tasks: formattedTasks });
@@ -73,19 +91,43 @@ app.get("/checkStatus", async (req, res) => {
   }
 });
 
+
 app.post("/checkWallet", async (req, res) => {
   const { worker_id } = req.body;
 
   try {
-    const balance = await contractInstance.getWalletBalance(worker_id);
-    res.status(200).json({ worker_id, balance: balance.toString() });
+    const status = await contractInstance.checkWallet(worker_id);
+    res.status(200).json({ status : status.toString() });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to check wallet balance" });
   }
 });
 
-const PORT = process.env.PORT || 3000;
+app.get("/getTotalTasks", async (req, res) => {
+  try {
+    const totalTasks = await contractInstance.getTotalTasks();
+    
+    res.status(200).json({ totalTasks: totalTasks.toString() });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch total tasks" });
+  }
+});
+
+app.get("/getAdmin", async (req, res) => {
+  try {
+    const Admin = await contractInstance.admin;
+    
+    res.status(200).json({ admin: Admin });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch admin" });
+  }
+});
+
+
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
