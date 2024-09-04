@@ -17,13 +17,10 @@ contract Overtime {
         uint256 hourlyWage;
         uint256 deadline;
         bool divisible;
-        bool allocated;
         uint workersLeft;
-       
-
     }
 
-    address admin;
+    address public admin;
     uint[] PricePoints;
     mapping(uint=>mapping(uint=>address[]))priceWorkerMap;
     mapping(address => Worker) public workers;
@@ -81,7 +78,7 @@ contract Overtime {
     address[] assigned;
     function addTask(uint256 timeRequired, uint256 expertiseRequired,uint[] calldata dependencies, uint256 hourlyWage, uint256 deadline, bool divisible) public onlyAdmin {
         require(1<=expertiseRequired && expertiseRequired<4 && deadline>block.timestamp,"invalid input");
-        tasks.push(Task(timeRequired, expertiseRequired,dependencies, hourlyWage, deadline, divisible,false,0));
+        tasks.push(Task(timeRequired, expertiseRequired,dependencies, hourlyWage, deadline, divisible,0));
         
         address[] memory t;
         assignedList.push(t);
@@ -90,9 +87,9 @@ contract Overtime {
     bool [] public doneTask;
     function checkStatusTask() public{
         for(uint i =0;i<tasks.length;i++){
-             if(!tasks[i].allocated)allocate(i);
-            if(i<doneTask.length)doneTask[i] = tasks[i].allocated && tasks[i].workersLeft==0;
-            else doneTask.push(tasks[i].allocated && tasks[i].workersLeft==0);
+             if(tasks[i].requiredTime>0)allocate(i);
+            if(i<doneTask.length)doneTask[i] = tasks[i].requiredTime==0 && tasks[i].workersLeft==0;
+            else doneTask.push(tasks[i].requiredTime==0 && tasks[i].workersLeft==0);
         }
     }
     function getStatusTask()public view returns (bool[]memory){
@@ -105,7 +102,6 @@ contract Overtime {
         uint x = lower_bound(tasks[taskId].hourlyWage);
         delete assigned;
         if(tasks[taskId].divisible){
-            uint done = 0;
             while(x>=0){
                 for(uint exp = tasks[taskId].expertiseRequired;exp<=maxExpertiseLevel;exp++){
                     for(uint i = 0;i<priceWorkerMap[PricePoints[x]][exp].length;i++){
@@ -114,22 +110,19 @@ contract Overtime {
                         for(uint it = 0; it<tasks[taskId].dependencies.length;it++){
                             if(assignedWorker[tasks[taskId].dependencies[it]][a]!=NULL_VAL){f=true;break;}
                         }
-                        if(f)continue;
-                        assigned.push(a);
-                        done+=workers[a].hoursAvailable;
-                        if(done>=tasks[taskId].requiredTime){
-                            tasks[taskId].allocated = true;
-                            tasks[taskId].workersLeft = assigned.length;
-                            done= tasks[taskId].requiredTime;
-                            for(uint t = 0;t<assigned.length-1;t++){
-                                done-=workers[assigned[t]].hoursAvailable;
-                                assignedWorker[taskId][assigned[t]]=workers[assigned[t]].hoursAvailable;
-                                assignedList[taskId].push(assigned[t]);
-                                workers[assigned[t]].hoursAvailable=0;
-                            }
-                            workers[assigned[assigned.length-1]].hoursAvailable-=done;
-                            assignedWorker[taskId][assigned[assigned.length-1]] = done;
-                            assignedList[taskId].push(assigned[assigned.length-1]);
+                        if(f || workers[a].hoursAvailable==0)continue;
+                        if(workers[a].hoursAvailable<tasks[taskId].requiredTime){
+                            tasks[taskId].requiredTime-=workers[a].hoursAvailable;
+                            assignedWorker[taskId][a]=workers[a].hoursAvailable;
+                            assignedList[taskId].push(a);
+                            workers[a].hoursAvailable=0;
+                            tasks[taskId].workersLeft++;
+                        }else{
+                            workers[a].hoursAvailable-=tasks[taskId].requiredTime;
+                            assignedWorker[taskId][a] = tasks[taskId].requiredTime;
+                            tasks[taskId].requiredTime=0;
+                            assignedList[taskId].push(a);
+                            tasks[taskId].workersLeft++;
                             return;
                         }
                     }
@@ -150,7 +143,9 @@ contract Overtime {
                         if(workers[a].hoursAvailable>=tasks[taskId].requiredTime){
                             assignedWorker[taskId][a] = tasks[taskId].requiredTime;
                             workers[a].hoursAvailable-=tasks[taskId].requiredTime;
+                            tasks[taskId].requiredTime=0;
                             assignedList[taskId].push(a);
+                            tasks[taskId].workersLeft++;
                             return;
                         }
                     }
@@ -160,6 +155,8 @@ contract Overtime {
             }
         }
     }
+    uint dones =0;
+    function getDoneTask() public view returns (uint){return dones;}
     function getAllocation() public view returns(address[][]memory){return assignedList;}
     function getTotalPayments() public view returns (uint){return totalPayment;}
     function getTotalHours() public view returns (uint){return totalHours;}
@@ -168,13 +165,14 @@ contract Overtime {
     function completeTask(uint256 taskId,address _worker) external payable onlyAdmin {
         require(assignedWorker[taskId][_worker]!=0 ,"This task is not allocated yet.");
         require(assignedWorker[taskId][_worker]<NULL_VAL ,"This task is already completed by worker.");
-        require(msg.value>=assignedWorker[taskId][_worker]*tasks[taskId].hourlyWage/1000000000,"insufficient funds");
+        require(msg.value>=assignedWorker[taskId][_worker]*tasks[taskId].hourlyWage*1000000000,"insufficient funds");
         require(block.timestamp <= tasks[taskId].deadline,"task has expired");
-        payable(_worker).transfer(assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage/1000000000);
+        payable(_worker).transfer(assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage*1000000000);
         totalPayment+=assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage;
         totalHours +=assignedWorker[taskId][_worker];
         tasks[taskId].workersLeft-=1;
-        payable (msg.sender).transfer(msg.value);
+        if(tasks[taskId].requiredTime==0 && tasks[taskId].workersLeft==0){dones+=1;}
+        payable (msg.sender).transfer(msg.value-assignedWorker[taskId][_worker] * tasks[taskId].hourlyWage*1000000000);
          assignedWorker[taskId][_worker]=NULL_VAL;
     }
     function g(uint a,address b)public view returns(uint){return assignedWorker[a][b];}
